@@ -1,11 +1,11 @@
 import StatCard from '../components/StatCard'
-import { clients } from '../data/clients'
+import { seedClients } from '../data/clients'
 
 // mock example: activity feed
 const recentActivity = [
-    { company: clients[0]?.company ?? 'Client', action: 'requested a redesign proposal', time: '2 hours ago' },
-    { company: clients[1]?.company ?? 'Client', action: 'received an invoice', time: '5 hours ago' },
-    { company: clients[2]?.company ?? 'Client', action: 'scheduled a follow-up call', time: 'Yesterday' },
+    { company: seedClients[0]?.company ?? 'Client', action: 'requested a redesign proposal', time: '2 hours ago' },
+    { company: seedClients[1]?.company ?? 'Client', action: 'received an invoice', time: '5 hours ago' },
+    { company: seedClients[2]?.company ?? 'Client', action: 'scheduled a follow-up call', time: 'Yesterday' },
 ]
 
 /**
@@ -18,7 +18,7 @@ function Dashboard() {
                 {/* mock example: analytics or summary endpoints */}
                 <StatCard title="Total Clients" value="128" change="+12% this month" />
                 <StatCard title="Active Projects" value="34" change="+5 new this week" />
-                <StatCard title="Monthly Revenue" value="$24,300" change="+8.4% growth" />
+                <StatCard title="Monthly Revenue" value="EUR 24,300" change="+8.4% growth" />
                 <StatCard title="Pending Invoices" value="9" change="2 due today" />
             </section>
 
@@ -26,7 +26,7 @@ function Dashboard() {
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
                     <h3 className="text-lg font-semibold">Performance Overview</h3>
                     <p className="mt-2 text-sm text-zinc-400">
-                        Later we can add a chart here.
+                        Place chart here.
                     </p>
 
                     {/* mock example: time-series or reporting data */}

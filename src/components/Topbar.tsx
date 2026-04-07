@@ -67,7 +67,7 @@ function Topbar() {
                     </button>
 
                     <div className="topbar-control flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-sm font-bold text-zinc-900">
-                        GK
+                        VM
                     </div>
                 </div>
             </div>
