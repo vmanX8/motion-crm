@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef } from 'react'
+import gsap from 'gsap'
 import type { Client } from '../data/clients'
 
 type ClientTableProps = {
@@ -16,6 +18,31 @@ const statusStyles: Record<Client['status'], string> = {
  * Client list table with row selection.
  */
 function ClientTable({ clients, selectedClientId, onSelectClient }: ClientTableProps) {
+    const tableRef = useRef<HTMLDivElement | null>(null)
+
+    useLayoutEffect(() => {
+        if (!tableRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return
+        }
+
+        const context = gsap.context(() => {
+            gsap.fromTo(
+                '[data-client-row]',
+                { y: 10, autoAlpha: 0 },
+                {
+                    y: 0,
+                    autoAlpha: 1,
+                    duration: 0.28,
+                    stagger: 0.04,
+                    ease: 'power2.out',
+                    clearProps: 'transform',
+                },
+            )
+        }, tableRef)
+
+        return () => context.revert()
+    }, [clients])
+
     if (clients.length === 0) {
         return (
             <div className="rounded-3xl border border-dashed border-white/10 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
@@ -25,7 +52,7 @@ function ClientTable({ clients, selectedClientId, onSelectClient }: ClientTableP
     }
 
     return (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+        <div ref={tableRef} className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
             <table className="w-full text-left">
                 <thead className="bg-zinc-900/80 text-sm text-zinc-400">
                     <tr>
@@ -42,6 +69,7 @@ function ClientTable({ clients, selectedClientId, onSelectClient }: ClientTableP
                         return (
                             <tr
                                 key={client.id}
+                                data-client-row
                                 onClick={() => onSelectClient(client.id)}
                                 className={`cursor-pointer border-t border-white/10 transition ${
                                     isSelected ? 'bg-white/8' : 'hover:bg-white/5'
