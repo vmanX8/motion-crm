@@ -1,5 +1,6 @@
 import StatCard from '../components/StatCard'
 import { seedClients } from '../data/clients'
+import usePageReveal from '../hooks/usePageReveal'
 
 // mock example: activity feed
 const recentActivity = [
@@ -12,9 +13,11 @@ const recentActivity = [
  * Main dashboard page with quick stats & recent activity.
  */
 function Dashboard() {
+    const pageRef = usePageReveal()
+
     return (
-        <div className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div ref={pageRef} className="space-y-6">
+            <section data-page-section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {/* mock example: analytics or summary endpoints */}
                 <StatCard title="Total Clients" value="128" change="+12% this month" />
                 <StatCard title="Active Projects" value="34" change="+5 new this week" />
@@ -22,7 +25,7 @@ function Dashboard() {
                 <StatCard title="Pending Invoices" value="9" change="2 due today" />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+            <section data-page-section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
                     <h3 className="text-lg font-semibold">Performance Overview</h3>
                     <p className="mt-2 text-sm text-zinc-400">
