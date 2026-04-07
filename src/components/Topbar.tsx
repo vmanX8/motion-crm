@@ -14,7 +14,7 @@ function Topbar() {
         }
 
         const context = gsap.context(() => {
-            // Bring the full bar in from the top.
+            // Full bar in from the top.
             gsap.fromTo(
                 headerRef.current,
                 { y: -24, autoAlpha: 0 },
@@ -26,7 +26,7 @@ function Topbar() {
                 },
             )
 
-            // Stagger the text and controls for a softer entrance.
+            // Stagger the text and controls for smooth fx.
             gsap.fromTo(
                 '.topbar-copy, .topbar-control',
                 { y: 14, autoAlpha: 0 },

@@ -6,7 +6,7 @@ A small but realistic frontend simulation of a CRM/admin panel. The goal was to 
 
 ---
 
-## 🚀 Tech Stack
+## Techology Stack
 
 - React (with TypeScript)
 - Vite
@@ -16,7 +16,7 @@ A small but realistic frontend simulation of a CRM/admin panel. The goal was to 
 
 ---
 
-## ✨ Features
+## Features
 
 - Responsive dashboard layout (sidebar + topbar)
 - Animated UI using GSAP (page load, cards, transitions)
@@ -27,7 +27,7 @@ A small but realistic frontend simulation of a CRM/admin panel. The goal was to 
 
 ---
 
-## 🎯 Purpose
+## Purpose
 
 This project is part of my frontend portfolio and focuses on:
 
@@ -38,8 +38,25 @@ This project is part of my frontend portfolio and focuses on:
 
 ---
 
-## 🧠 Notes
+## Notes
 
 The app uses mock data and does not connect to a backend.  
 The focus is on frontend architecture, interaction, and visual quality.
 
+---
+
+## Future Improvements
+
+- Client search & filtering
+- Client details drawer/modal
+- Editable data with local state
+- LocalStorage persistence
+- Charts and analytics widgets
+- jQuery-based legacy widget integration (demo purpose)
+
+---
+
+## Author
+
+V. Manouhos
+GitHub: https://github.com/your-username

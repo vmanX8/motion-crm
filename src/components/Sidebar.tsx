@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { LayoutDashboard, Users, FolderKanban, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
-// Small nav map for the demo sidebar.
+// Demo sidebar.
 const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/clients', label: 'Clients', icon: Users },
@@ -12,7 +12,7 @@ const navItems = [
 ]
 
 /**
- * Left navigation for the dashboard layout.
+ * Left nav dashboard.
  */
 function Sidebar() {
     const containerRef = useRef<HTMLElement | null>(null)
@@ -23,7 +23,7 @@ function Sidebar() {
         }
 
         const context = gsap.context(() => {
-            // Slide the sidebar in first.
+            // Slide sidebar first.
             gsap.fromTo(
                 containerRef.current,
                 { x: -28, autoAlpha: 0 },
@@ -35,7 +35,7 @@ function Sidebar() {
                 },
             )
 
-            // Fade and lift the brand and links after the shell shows up.
+            // Fade and lift the brand and links after the shell.
             gsap.fromTo(
                 '.sidebar-brand, .sidebar-link',
                 { y: 18, autoAlpha: 0 },

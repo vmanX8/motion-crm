@@ -7,7 +7,7 @@ import Projects from './pages/Projects'
 import Settings from './pages/Settings'
 
 /**
- * Main app shell with shared layout and page routes.
+ * Main app shell
  */
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
           <Topbar />
 
           <main className="flex-1 p-6 md:p-8">
-            {/* mock example: a production app would usually define routes in a separate router file */}
+            {/* mock example: no define routes*/}
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/clients" element={<Clients />} />
