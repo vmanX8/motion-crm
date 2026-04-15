@@ -4,64 +4,159 @@ import ClientDrawer from '../components/ClientDrawer'
 import ClientFilters from '../components/ClientFilters'
 import ClientTable from '../components/ClientTable'
 import usePageReveal from '../hooks/usePageReveal'
-import { seedClients, type Client, type ClientStatus } from '../data/clients'
+import { motionTokens, prefersReducedMotion } from '../lib/motion'
+import { toClientDetails, toClientSummary, type ClientDetails, type ClientStatus, type ClientSummary } from '../data/clients'
+import {
+    createClient,
+    getClientDetailsById,
+    getClientSummaries,
+    resetClientData,
+    updateClientNotes,
+    updateClientStatus,
+} from '../services/clientService'
 
-const STORAGE_KEY = 'motion-crm-clients'
+const ClientTableSkeleton = () => (
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+        <div className="grid grid-cols-4 gap-4 border-b border-white/10 bg-zinc-900/80 px-4 py-3 text-sm text-zinc-500">
+            <div>Company</div>
+            <div>Contact</div>
+            <div>Last Touch</div>
+            <div>Status</div>
+        </div>
 
-const readClientsFromStorage = () => {
-    if (typeof window === 'undefined') {
-        return seedClients
-    }
-
-    const rawValue = window.localStorage.getItem(STORAGE_KEY)
-    if (!rawValue) {
-        return seedClients
-    }
-
-    try {
-        return JSON.parse(rawValue) as Client[]
-    } catch {
-        return seedClients
-    }
-}
+        <div className="space-y-3 p-4">
+            {[0, 1, 2, 3].map((row) => (
+                <div
+                    key={row}
+                    className="grid animate-pulse grid-cols-4 gap-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-4"
+                >
+                    <div className="space-y-2">
+                        <div className="h-4 w-28 rounded-full bg-white/10" />
+                        <div className="h-3 w-36 rounded-full bg-white/5" />
+                    </div>
+                    <div className="h-4 w-24 self-center rounded-full bg-white/10" />
+                    <div className="h-4 w-20 self-center rounded-full bg-white/5" />
+                    <div className="h-6 w-16 self-center rounded-full bg-white/10" />
+                </div>
+            ))}
+        </div>
+    </div>
+)
 
 /**
- * Stateful client management page with local persistence.
+ * Async client management page backed by a mock service layer.
  */
 function Clients() {
     const pageRef = usePageReveal()
     const filtersRef = useRef<HTMLDivElement | null>(null)
-    const [clients, setClients] = useState<Client[]>(readClientsFromStorage)
+    const [clients, setClients] = useState<ClientSummary[]>([])
+    const [selectedClientDetails, setSelectedClientDetails] = useState<ClientDetails | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const [isMutating, setIsMutating] = useState(false)
     const [searchValue, setSearchValue] = useState('')
     const [statusValue, setStatusValue] = useState<ClientStatus | 'All'>('All')
     const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
+    const [isDetailLoading, setIsDetailLoading] = useState(false)
+    const [detailError, setDetailError] = useState<string | null>(null)
     const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-
-    useEffect(() => {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clients))
-    }, [clients])
+    const [highlightedClientId, setHighlightedClientId] = useState<number | null>(null)
 
     useLayoutEffect(() => {
-        if (!filtersRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (!filtersRef.current || prefersReducedMotion()) {
             return
         }
 
         const context = gsap.context(() => {
             gsap.fromTo(
                 '[data-filter-block]',
-                { y: 10, autoAlpha: 0 },
+                { y: motionTokens.filters.distance, autoAlpha: 0 },
                 {
                     y: 0,
                     autoAlpha: 1,
-                    duration: 0.26,
-                    stagger: 0.04,
-                    ease: 'power2.out',
+                    duration: motionTokens.filters.duration,
+                    stagger: motionTokens.filters.stagger,
+                    ease: motionTokens.filters.ease,
                 },
             )
         }, filtersRef)
 
         return () => context.revert()
-    }, [searchValue, statusValue])
+    }, [])
+
+    useEffect(() => {
+        let isMounted = true
+
+        const loadClients = async () => {
+            setIsLoading(true)
+            setErrorMessage(null)
+
+            try {
+                const nextClients = await getClientSummaries()
+                if (!isMounted) {
+                    return
+                }
+
+                setClients(nextClients)
+                setSelectedClientId((currentId) =>
+                    currentId !== null && nextClients.some((client) => client.id === currentId) ? currentId : null,
+                )
+            } catch {
+                if (isMounted) {
+                    setErrorMessage('Could not load clients. Please try again.')
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false)
+                }
+            }
+        }
+
+        void loadClients()
+
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
+    useEffect(() => {
+        if (selectedClientId === null) {
+            setSelectedClientDetails(null)
+            setIsDetailLoading(false)
+            setDetailError(null)
+            return
+        }
+
+        let isMounted = true
+
+        const loadDetails = async () => {
+            setIsDetailLoading(true)
+            setDetailError(null)
+
+            try {
+                const nextDetails = await getClientDetailsById(selectedClientId)
+                if (!isMounted) {
+                    return
+                }
+
+                setSelectedClientDetails(nextDetails)
+            } catch {
+                if (isMounted) {
+                    setDetailError('Could not load client details. Please try again.')
+                }
+            } finally {
+                if (isMounted) {
+                    setIsDetailLoading(false)
+                }
+            }
+        }
+
+        void loadDetails()
+
+        return () => {
+            isMounted = false
+        }
+    }, [selectedClientId])
 
     const filteredClients = clients.filter((client) => {
         const matchesSearch = [client.company, client.contact, client.email]
@@ -74,45 +169,109 @@ function Clients() {
         return matchesSearch && matchesStatus
     })
 
-    const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null
+    const selectedSummary = clients.find((client) => client.id === selectedClientId) ?? null
+    const selectedDetails = selectedClientDetails
 
-    const handleSaveClient = (updatedClient: Client) => {
-        setClients((currentClients) =>
-            currentClients.map((client) => (client.id === updatedClient.id ? updatedClient : client)),
-        )
-        setSelectedClientId(updatedClient.id)
-        setIsDrawerOpen(false)
-    }
+    const loadClients = async () => {
+        setIsLoading(true)
+        setErrorMessage(null)
 
-    const handleAddClient = () => {
-        const nextClient: Client = {
-            id: Date.now(),
-            company: 'New Client',
-            contact: 'New Contact',
-            email: 'hello@example.com',
-            phone: '+1 (000) 000-0000',
-            status: 'Lead',
-            lastTouch: 'Just now',
-            notes: 'Add discovery notes here.',
+        try {
+            const nextClients = await getClientSummaries()
+            setClients(nextClients)
+        } catch {
+            setErrorMessage('Could not load clients. Please try again.')
+        } finally {
+            setIsLoading(false)
         }
-
-        setClients((currentClients) => [nextClient, ...currentClients])
-        setSelectedClientId(nextClient.id)
-        setIsDrawerOpen(true)
     }
 
-    const handleResetDemoData = () => {
-        setClients(seedClients)
-        setSearchValue('')
-        setStatusValue('All')
-        setSelectedClientId(null)
-        setIsDrawerOpen(false)
-        window.localStorage.removeItem(STORAGE_KEY)
+    const handleAddClient = async () => {
+        setIsMutating(true)
+        setErrorMessage(null)
+
+        try {
+            const nextClient = await createClient()
+            setClients((currentClients) => [toClientSummary(nextClient), ...currentClients])
+            setSelectedClientDetails(toClientDetails(nextClient))
+            setSelectedClientId(nextClient.id)
+            setIsDrawerOpen(true)
+        } catch {
+            setErrorMessage('Could not create a new client. Please try again.')
+        } finally {
+            setIsMutating(false)
+        }
+    }
+
+    const handleResetDemoData = async () => {
+        setIsMutating(true)
+        setErrorMessage(null)
+
+        try {
+            const nextClients = await resetClientData()
+            setClients(nextClients)
+            setSelectedClientDetails(null)
+            setSearchValue('')
+            setStatusValue('All')
+            setSelectedClientId(null)
+            setIsDrawerOpen(false)
+        } catch {
+            setErrorMessage('Could not reset the demo data. Please try again.')
+        } finally {
+            setIsMutating(false)
+        }
     }
 
     const handleSelectClient = (clientId: number) => {
+        setSelectedClientDetails(null)
+        setDetailError(null)
+        setIsDetailLoading(true)
         setSelectedClientId(clientId)
         setIsDrawerOpen(true)
+    }
+
+    const handleRetryDetails = async () => {
+        if (selectedClientId === null) {
+            return
+        }
+
+        setIsDetailLoading(true)
+        setDetailError(null)
+
+        try {
+            const nextDetails = await getClientDetailsById(selectedClientId)
+            setSelectedClientDetails(nextDetails)
+        } catch {
+            setDetailError('Could not load client details. Please try again.')
+        } finally {
+            setIsDetailLoading(false)
+        }
+    }
+
+    const handleSaveStatus = async (status: ClientStatus) => {
+        if (selectedClientId === null) {
+            return
+        }
+
+        const updatedClient = await updateClientStatus(selectedClientId, status)
+
+        setClients((currentClients) =>
+            currentClients.map((client) => (client.id === updatedClient.id ? toClientSummary(updatedClient) : client)),
+        )
+        setSelectedClientDetails(toClientDetails(updatedClient))
+        setHighlightedClientId(updatedClient.id)
+        window.setTimeout(() => {
+            setHighlightedClientId((currentId) => (currentId === updatedClient.id ? null : currentId))
+        }, 700)
+    }
+
+    const handleSaveNotes = async (notes: string) => {
+        if (selectedClientId === null) {
+            return
+        }
+
+        const updatedClient = await updateClientNotes(selectedClientId, notes)
+        setSelectedClientDetails(toClientDetails(updatedClient))
     }
 
     return (
@@ -128,7 +287,8 @@ function Clients() {
                         <div className="flex flex-wrap items-center gap-3">
                             <button
                                 type="button"
-                                onClick={handleResetDemoData}
+                                onClick={() => void handleResetDemoData()}
+                                disabled={isLoading || isMutating}
                                 className="rounded-2xl border border-white/10 px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
                             >
                                 Reset Demo Data
@@ -136,7 +296,8 @@ function Clients() {
 
                             <button
                                 type="button"
-                                onClick={handleAddClient}
+                                onClick={() => void handleAddClient()}
+                                disabled={isLoading || isMutating}
                                 className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:scale-[1.02]"
                             >
                                 Add Client
@@ -145,36 +306,78 @@ function Clients() {
                     </div>
 
                     <div ref={filtersRef} className="mt-6 space-y-6">
+                        {!isLoading && (
+                            <div data-filter-block>
+                                <ClientFilters
+                                    searchValue={searchValue}
+                                    statusValue={statusValue}
+                                    resultCount={filteredClients.length}
+                                    totalCount={clients.length}
+                                    onSearchChange={setSearchValue}
+                                    onStatusChange={setStatusValue}
+                                />
+                            </div>
+                        )}
+
                         <div data-filter-block>
-                            <ClientFilters
-                                searchValue={searchValue}
-                                statusValue={statusValue}
-                                resultCount={filteredClients.length}
-                                totalCount={clients.length}
-                                onSearchChange={setSearchValue}
-                                onStatusChange={setStatusValue}
-                            />
+                            {isLoading ? (
+                                <div className="space-y-4">
+                                    <div className="rounded-3xl border border-dashed border-white/10 bg-zinc-900/40 p-5 text-sm text-zinc-400">
+                                        Loading clients...
+                                    </div>
+                                    <ClientTableSkeleton />
+                                </div>
+                            ) : errorMessage && clients.length === 0 ? (
+                                <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 p-6">
+                                    <p className="text-sm font-medium text-rose-200">{errorMessage}</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => void loadClients()}
+                                        className="mt-4 rounded-2xl border border-white/10 px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/5 hover:text-white"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            ) : filteredClients.length === 0 ? (
+                                <div className="rounded-3xl border border-dashed border-white/10 bg-zinc-900/40 p-8 text-center">
+                                    <p className="text-sm font-medium text-zinc-200">No clients found.</p>
+                                    <p className="mt-2 text-sm text-zinc-400">
+                                        {clients.length === 0
+                                            ? 'The client list is empty right now.'
+                                            : 'Try adjusting the current search or status filter.'}
+                                    </p>
+                                </div>
+                            ) : (
+                                <ClientTable
+                                    clients={filteredClients}
+                                    selectedClientId={selectedClientId}
+                                    highlightedClientId={highlightedClientId}
+                                    onSelectClient={handleSelectClient}
+                                />
+                            )}
                         </div>
 
-                        {/* mock example: production tables usually load, filter, and paginate server data */}
-                        <div data-filter-block>
-                            <ClientTable
-                                clients={filteredClients}
-                                selectedClientId={selectedClientId}
-                                onSelectClient={handleSelectClient}
-                            />
-                        </div>
+                        {errorMessage && clients.length > 0 && (
+                            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                                {errorMessage}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             <ClientDrawer
-                key={selectedClient?.id ?? 'empty'}
-                client={selectedClient}
-                isOpen={isDrawerOpen && selectedClient !== null}
+                selectedClientId={selectedClientId}
+                summary={selectedSummary}
+                details={selectedDetails}
+                isDetailLoading={isDetailLoading}
+                detailError={detailError}
+                isOpen={isDrawerOpen && selectedSummary !== null}
                 onRequestClose={() => setIsDrawerOpen(false)}
                 onClosed={() => setSelectedClientId(null)}
-                onSave={handleSaveClient}
+                onRetryDetails={() => void handleRetryDetails()}
+                onSaveStatus={handleSaveStatus}
+                onSaveNotes={handleSaveNotes}
             />
         </>
     )
