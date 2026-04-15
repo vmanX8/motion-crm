@@ -11,6 +11,7 @@ import {
     getClientDetailsById,
     getClientSummaries,
     resetClientData,
+    updateClientFields,
     updateClientNotes,
     updateClientStatus,
 } from '../services/clientService'
@@ -49,6 +50,7 @@ const ClientTableSkeleton = () => (
 function Clients() {
     const pageRef = usePageReveal()
     const filtersRef = useRef<HTMLDivElement | null>(null)
+    const listStateRef = useRef<HTMLDivElement | null>(null)
     const [clients, setClients] = useState<ClientSummary[]>([])
     const [selectedClientDetails, setSelectedClientDetails] = useState<ClientDetails | null>(null)
     const [isLoading, setIsLoading] = useState(true)
@@ -172,6 +174,24 @@ function Clients() {
     const selectedSummary = clients.find((client) => client.id === selectedClientId) ?? null
     const selectedDetails = selectedClientDetails
 
+    useLayoutEffect(() => {
+        if (!listStateRef.current || prefersReducedMotion()) {
+            return
+        }
+
+        gsap.fromTo(
+            listStateRef.current,
+            { autoAlpha: 0.72, y: motionTokens.asyncState.distance },
+            {
+                autoAlpha: 1,
+                y: 0,
+                duration: motionTokens.asyncState.duration,
+                ease: motionTokens.asyncState.ease,
+                clearProps: 'transform',
+            },
+        )
+    }, [errorMessage, filteredClients.length, isLoading])
+
     const loadClients = async () => {
         setIsLoading(true)
         setErrorMessage(null)
@@ -265,6 +285,24 @@ function Clients() {
         }, 700)
     }
 
+    const handleSaveProfile = async (profile: {
+        company: string
+        contact: string
+        email: string
+        phone: string
+    }) => {
+        if (selectedClientId === null) {
+            return
+        }
+
+        const updatedClient = await updateClientFields(selectedClientId, profile)
+
+        setClients((currentClients) =>
+            currentClients.map((client) => (client.id === updatedClient.id ? toClientSummary(updatedClient) : client)),
+        )
+        setSelectedClientDetails(toClientDetails(updatedClient))
+    }
+
     const handleSaveNotes = async (notes: string) => {
         if (selectedClientId === null) {
             return
@@ -319,7 +357,7 @@ function Clients() {
                             </div>
                         )}
 
-                        <div data-filter-block>
+                        <div ref={listStateRef} data-filter-block className="min-h-[18rem]">
                             {isLoading ? (
                                 <div className="space-y-4">
                                     <div className="rounded-3xl border border-dashed border-white/10 bg-zinc-900/40 p-5 text-sm text-zinc-400">
@@ -376,6 +414,7 @@ function Clients() {
                 onRequestClose={() => setIsDrawerOpen(false)}
                 onClosed={() => setSelectedClientId(null)}
                 onRetryDetails={() => void handleRetryDetails()}
+                onSaveProfile={handleSaveProfile}
                 onSaveStatus={handleSaveStatus}
                 onSaveNotes={handleSaveNotes}
             />

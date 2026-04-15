@@ -39,6 +39,11 @@ export const motionTokens = {
         duration: 0.42,
         ease: 'power2.out',
     },
+    asyncState: {
+        distance: 4,
+        duration: 0.18,
+        ease: 'power1.out',
+    },
 } as const
 
 export const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches

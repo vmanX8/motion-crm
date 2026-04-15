@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
-import { X } from 'lucide-react'
+import { Check, LoaderCircle, X } from 'lucide-react'
 import { clientStatuses, type ClientDetails, type ClientStatus, type ClientSummary } from '../data/clients'
 import { motionTokens, prefersReducedMotion } from '../lib/motion'
 
@@ -14,11 +14,210 @@ type ClientDrawerProps = {
     onRequestClose: () => void
     onClosed: () => void
     onRetryDetails: () => void
+    onSaveProfile: (profile: ClientProfileForm) => Promise<void>
     onSaveStatus: (status: ClientStatus) => Promise<void>
     onSaveNotes: (notes: string) => Promise<void>
 }
 
 type SaveState = 'idle' | 'saving' | 'saved'
+type ClientProfileForm = Pick<ClientSummary, 'company' | 'contact' | 'email'> & Pick<ClientDetails, 'phone'>
+
+type ProfileEditorProps = {
+    initialProfile: ClientProfileForm
+    onSave: (profile: ClientProfileForm) => Promise<void>
+}
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phonePattern = /^[+()\-.\s\d]+$/
+const getPhoneDigits = (value: string) => value.replace(/\D/g, '')
+const sanitizePhoneInput = (value: string) => value.replace(/[^+()\-.\s\d]/g, '')
+
+function ProfileEditor({ initialProfile, onSave }: ProfileEditorProps) {
+    const [profile, setProfile] = useState(initialProfile)
+    const [saveState, setSaveState] = useState<SaveState>('idle')
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const sectionRef = useRef<HTMLDivElement | null>(null)
+    const saveStatusRef = useRef<HTMLSpanElement | null>(null)
+
+    const emailError =
+        profile.email.trim().length > 0 && !emailPattern.test(profile.email.trim())
+            ? 'Enter a valid email address.'
+            : null
+    const phoneDigits = getPhoneDigits(profile.phone)
+    const phoneError =
+        profile.phone.trim().length > 0 && (!phonePattern.test(profile.phone) || phoneDigits.length < 7 || phoneDigits.length > 15)
+            ? 'Enter a valid phone number with 7 to 15 digits.'
+            : null
+
+    const hasChanges =
+        profile.company !== initialProfile.company ||
+        profile.contact !== initialProfile.contact ||
+        profile.email !== initialProfile.email ||
+        profile.phone !== initialProfile.phone
+
+    const isProfileValid =
+        profile.company.trim().length > 0 &&
+        profile.contact.trim().length > 0 &&
+        profile.email.trim().length > 0 &&
+        profile.phone.trim().length > 0 &&
+        !emailError &&
+        !phoneError
+
+    const updateField = <Key extends keyof ClientProfileForm>(field: Key, value: ClientProfileForm[Key]) => {
+        setProfile((currentProfile) => ({
+            ...currentProfile,
+            [field]: value,
+        }))
+    }
+
+    const handleSave = async () => {
+        if (!hasChanges || !isProfileValid) {
+            return
+        }
+
+        setSaveState('saving')
+        setErrorMessage(null)
+
+        try {
+            await onSave(profile)
+            setSaveState('saved')
+            window.setTimeout(() => {
+                setSaveState('idle')
+            }, 1500)
+        } catch {
+            setSaveState('idle')
+            setErrorMessage('Could not save contact details. Your changes are still here, so you can retry.')
+        }
+    }
+
+    useLayoutEffect(() => {
+        if (!saveStatusRef.current || saveState === 'idle' || prefersReducedMotion()) {
+            return
+        }
+
+        gsap.fromTo(
+            saveStatusRef.current,
+            { autoAlpha: 0.4, y: 4, scale: 0.96 },
+            {
+                autoAlpha: 1,
+                y: 0,
+                scale: 1,
+                duration: motionTokens.feedback.duration,
+                ease: motionTokens.feedback.ease,
+                clearProps: 'transform',
+            },
+        )
+    }, [saveState])
+
+    useLayoutEffect(() => {
+        if (!sectionRef.current || saveState !== 'saved' || prefersReducedMotion()) {
+            return
+        }
+
+        const timeline = gsap.timeline()
+        timeline.to(sectionRef.current, {
+            backgroundColor: 'rgba(34, 197, 94, 0.09)',
+            borderColor: 'rgba(34, 197, 94, 0.28)',
+            duration: motionTokens.highlight.duration * 0.45,
+            ease: motionTokens.highlight.ease,
+        })
+        timeline.to(sectionRef.current, {
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            duration: motionTokens.highlight.duration,
+            ease: motionTokens.highlight.ease,
+        })
+
+        return () => {
+            timeline.kill()
+        }
+    }, [saveState])
+
+    return (
+        <div ref={sectionRef} data-drawer-item className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <p className="text-sm text-zinc-300">Contact Details</p>
+                    <p className="mt-1 text-sm text-zinc-500">Edit the core client info shown across the app.</p>
+                </div>
+                <span
+                    ref={saveStatusRef}
+                    className={`inline-flex min-h-8 min-w-24 items-center justify-center gap-2 rounded-full px-3 text-xs ${
+                        saveState === 'saving'
+                            ? 'bg-white/8 text-zinc-200'
+                            : saveState === 'saved'
+                              ? 'bg-emerald-500/12 text-emerald-200'
+                              : 'bg-transparent text-zinc-500'
+                    }`}
+                >
+                    {saveState === 'saving' && <LoaderCircle size={12} className="animate-spin" />}
+                    {saveState === 'saved' && <Check size={12} />}
+                    {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : null}
+                </span>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="block">
+                    <span className="mb-2 block text-sm text-zinc-400">Company</span>
+                    <input
+                        type="text"
+                        value={profile.company}
+                        onChange={(event) => updateField('company', event.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+                    />
+                </label>
+
+                <label className="block">
+                    <span className="mb-2 block text-sm text-zinc-400">Contact</span>
+                    <input
+                        type="text"
+                        value={profile.contact}
+                        onChange={(event) => updateField('contact', event.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+                    />
+                </label>
+
+                <label className="block">
+                    <span className="mb-2 block text-sm text-zinc-400">Email</span>
+                    <input
+                        type="email"
+                        value={profile.email}
+                        onChange={(event) => updateField('email', event.target.value)}
+                        aria-invalid={emailError !== null}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+                    />
+                    {emailError && <p className="mt-2 text-sm text-rose-300">{emailError}</p>}
+                </label>
+
+                <label className="block">
+                    <span className="mb-2 block text-sm text-zinc-400">Phone</span>
+                    <input
+                        type="text"
+                        inputMode="tel"
+                        value={profile.phone}
+                        onChange={(event) => updateField('phone', sanitizePhoneInput(event.target.value))}
+                        aria-invalid={phoneError !== null}
+                        maxLength={24}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+                    />
+                    {phoneError && <p className="mt-2 text-sm text-rose-300">{phoneError}</p>}
+                </label>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-sm text-rose-300">{errorMessage}</p>
+                <button
+                    type="button"
+                    onClick={() => void handleSave()}
+                    disabled={!hasChanges || !isProfileValid || saveState === 'saving'}
+                    className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    Save Details
+                </button>
+            </div>
+        </div>
+    )
+}
 
 type StatusEditorProps = {
     initialStatus: ClientStatus
@@ -29,6 +228,7 @@ function StatusEditor({ initialStatus, onSave }: StatusEditorProps) {
     const [value, setValue] = useState(initialStatus)
     const [saveState, setSaveState] = useState<SaveState>('idle')
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const sectionRef = useRef<HTMLDivElement | null>(null)
     const statusRef = useRef<HTMLDivElement | null>(null)
 
     const hasChanges = value !== initialStatus
@@ -62,25 +262,62 @@ function StatusEditor({ initialStatus, onSave }: StatusEditorProps) {
         const target = statusRef.current
         gsap.fromTo(
             target,
-            { autoAlpha: 0.45, y: 2 },
+            { autoAlpha: 0.4, y: 4, scale: 0.96 },
             {
                 autoAlpha: 1,
                 y: 0,
+                scale: 1,
                 duration: motionTokens.feedback.duration,
                 ease: motionTokens.feedback.ease,
+                clearProps: 'transform',
             },
         )
     }, [saveState])
 
+    useLayoutEffect(() => {
+        if (!sectionRef.current || saveState !== 'saved' || prefersReducedMotion()) {
+            return
+        }
+
+        const timeline = gsap.timeline()
+        timeline.to(sectionRef.current, {
+            backgroundColor: 'rgba(34, 197, 94, 0.09)',
+            borderColor: 'rgba(34, 197, 94, 0.28)',
+            duration: motionTokens.highlight.duration * 0.45,
+            ease: motionTokens.highlight.ease,
+        })
+        timeline.to(sectionRef.current, {
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            duration: motionTokens.highlight.duration,
+            ease: motionTokens.highlight.ease,
+        })
+
+        return () => {
+            timeline.kill()
+        }
+    }, [saveState])
+
     return (
-        <div data-drawer-item className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div ref={sectionRef} data-drawer-item className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-sm text-zinc-300">Status</p>
                     <p className="mt-1 text-sm text-zinc-500">Updates the drawer and the matching row.</p>
                 </div>
-                <span ref={statusRef} className="text-xs text-zinc-500">
-                    {saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Saved' : null}
+                <span
+                    ref={statusRef}
+                    className={`inline-flex min-h-8 min-w-24 items-center justify-center gap-2 rounded-full px-3 text-xs ${
+                        saveState === 'saving'
+                            ? 'bg-white/8 text-zinc-200'
+                            : saveState === 'saved'
+                              ? 'bg-emerald-500/12 text-emerald-200'
+                              : 'bg-transparent text-zinc-500'
+                    }`}
+                >
+                    {saveState === 'saving' && <LoaderCircle size={12} className="animate-spin" />}
+                    {saveState === 'saved' && <Check size={12} />}
+                    {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : null}
                 </span>
             </div>
 
@@ -121,6 +358,7 @@ function NotesEditor({ initialNotes, onSave }: NotesEditorProps) {
     const [value, setValue] = useState(initialNotes)
     const [saveState, setSaveState] = useState<SaveState>('idle')
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const sectionRef = useRef<HTMLDivElement | null>(null)
     const notesStatusRef = useRef<HTMLSpanElement | null>(null)
     const errorRef = useRef<HTMLParagraphElement | null>(null)
 
@@ -153,14 +391,40 @@ function NotesEditor({ initialNotes, onSave }: NotesEditorProps) {
 
         gsap.fromTo(
             notesStatusRef.current,
-            { autoAlpha: 0.45, y: 2 },
+            { autoAlpha: 0.4, y: 4, scale: 0.96 },
             {
                 autoAlpha: 1,
                 y: 0,
+                scale: 1,
                 duration: motionTokens.feedback.duration,
                 ease: motionTokens.feedback.ease,
+                clearProps: 'transform',
             },
         )
+    }, [saveState])
+
+    useLayoutEffect(() => {
+        if (!sectionRef.current || saveState !== 'saved' || prefersReducedMotion()) {
+            return
+        }
+
+        const timeline = gsap.timeline()
+        timeline.to(sectionRef.current, {
+            backgroundColor: 'rgba(34, 197, 94, 0.09)',
+            borderColor: 'rgba(34, 197, 94, 0.28)',
+            duration: motionTokens.highlight.duration * 0.45,
+            ease: motionTokens.highlight.ease,
+        })
+        timeline.to(sectionRef.current, {
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            duration: motionTokens.highlight.duration,
+            ease: motionTokens.highlight.ease,
+        })
+
+        return () => {
+            timeline.kill()
+        }
     }, [saveState])
 
     useLayoutEffect(() => {
@@ -181,14 +445,25 @@ function NotesEditor({ initialNotes, onSave }: NotesEditorProps) {
     }, [errorMessage])
 
     return (
-        <div data-drawer-item className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div ref={sectionRef} data-drawer-item className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-sm text-zinc-300">Notes</p>
                     <p className="mt-1 text-sm text-zinc-500">Draft locally and save intentionally.</p>
                 </div>
-                <span ref={notesStatusRef} className="text-xs text-zinc-500">
-                    {saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Saved' : null}
+                <span
+                    ref={notesStatusRef}
+                    className={`inline-flex min-h-8 min-w-24 items-center justify-center gap-2 rounded-full px-3 text-xs ${
+                        saveState === 'saving'
+                            ? 'bg-white/8 text-zinc-200'
+                            : saveState === 'saved'
+                              ? 'bg-emerald-500/12 text-emerald-200'
+                              : 'bg-transparent text-zinc-500'
+                    }`}
+                >
+                    {saveState === 'saving' && <LoaderCircle size={12} className="animate-spin" />}
+                    {saveState === 'saved' && <Check size={12} />}
+                    {saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : null}
                 </span>
             </div>
 
@@ -227,12 +502,14 @@ function ClientDrawer({
     onRequestClose,
     onClosed,
     onRetryDetails,
+    onSaveProfile,
     onSaveStatus,
     onSaveNotes,
 }: ClientDrawerProps) {
     const overlayRef = useRef<HTMLDivElement | null>(null)
     const panelRef = useRef<HTMLElement | null>(null)
     const contentRef = useRef<HTMLDivElement | null>(null)
+    const stateRef = useRef<HTMLDivElement | null>(null)
     const hasOpenedRef = useRef(false)
 
     useEffect(() => {
@@ -329,6 +606,20 @@ function ClientDrawer({
         }
 
         const context = gsap.context(() => {
+            if (stateRef.current) {
+                gsap.fromTo(
+                    stateRef.current,
+                    { autoAlpha: 0.72, y: motionTokens.asyncState.distance },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        duration: motionTokens.asyncState.duration,
+                        ease: motionTokens.asyncState.ease,
+                        clearProps: 'transform',
+                    },
+                )
+            }
+
             gsap.fromTo(
                 '[data-drawer-item]',
                 { y: motionTokens.drawerContent.distance, autoAlpha: 0 },
@@ -377,7 +668,7 @@ function ClientDrawer({
 
                 <div ref={contentRef} className="mt-6 flex-1 overflow-y-auto pr-1">
                     {isDetailLoading ? (
-                        <div className="space-y-4">
+                        <div ref={stateRef} data-drawer-state className="min-h-[20rem] space-y-4">
                             {[0, 1, 2, 3].map((row) => (
                                 <div key={row} data-drawer-item className="animate-pulse space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                     <div className="h-4 w-24 rounded-full bg-white/10" />
@@ -386,7 +677,7 @@ function ClientDrawer({
                             ))}
                         </div>
                     ) : detailError ? (
-                        <div data-drawer-item className="rounded-3xl border border-rose-500/20 bg-rose-500/10 p-5">
+                        <div ref={stateRef} data-drawer-state data-drawer-item className="min-h-[20rem] rounded-3xl border border-rose-500/20 bg-rose-500/10 p-5">
                             <p className="text-sm font-medium text-rose-200">{detailError}</p>
                             <button
                                 type="button"
@@ -397,20 +688,19 @@ function ClientDrawer({
                             </button>
                         </div>
                     ) : details ? (
-                        <div className="space-y-5">
+                        <div ref={stateRef} data-drawer-state className="min-h-[20rem] space-y-5">
+                            <ProfileEditor
+                                key={`profile-${selectedClientId ?? 'empty'}`}
+                                initialProfile={{
+                                    company: summary.company,
+                                    contact: summary.contact,
+                                    email: summary.email,
+                                    phone: details.phone,
+                                }}
+                                onSave={onSaveProfile}
+                            />
+
                             <div data-drawer-item className="grid gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-2">
-                                <div>
-                                    <p className="text-sm text-zinc-500">Contact</p>
-                                    <p className="mt-1 text-sm text-white">{summary.contact}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-zinc-500">Email</p>
-                                    <p className="mt-1 text-sm text-white">{summary.email}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-zinc-500">Phone</p>
-                                    <p className="mt-1 text-sm text-white">{details.phone}</p>
-                                </div>
                                 <div>
                                     <p className="text-sm text-zinc-500">Last Touch</p>
                                     <p className="mt-1 text-sm text-white">{summary.lastTouch}</p>
