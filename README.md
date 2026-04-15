@@ -97,4 +97,5 @@ Lower priority ideas:
 ## Author
 
 V. Manouhos
+
 GitHub: https://github.com/vmanX8/motion-crm
