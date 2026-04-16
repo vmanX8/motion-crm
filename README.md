@@ -59,6 +59,30 @@ It is still a frontend-only project, but the data flow is intentionally shaped t
 
 ---
 
+## Legacy jQuery-based Component
+
+The settings page includes a small demo integration for a legacy jQuery widget.
+
+Example widget: **Tag Manager**
+
+Inside that widget, the user can:
+
+- add tags
+- remove tags
+- click a tag to edit it
+- save edited tag text
+
+The widget is intentionally isolated from the React-managed UI. Its DOM updates are handled by jQuery inside one component, which makes the integration realistic without letting legacy code leak into the rest of the app.
+
+Why it fits this project:
+
+- it is simple and visually obvious
+- it behaves like a real admin utility
+- it demonstrates how legacy DOM code can coexist with React
+- it does not interfere with the main CRM state or routing
+
+---
+
 ## Why I Built It
 
 This project is part of my frontend portfolio. I used it to focus on a few things that matter in real product work:
