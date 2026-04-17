@@ -1,8 +1,9 @@
 import StatCard from '../components/StatCard'
+import RevenueTrendChart from '../components/RevenueTrendChart'
 import { seedClients } from '../data/clients'
 import usePageReveal from '../hooks/usePageReveal'
 
-// mock example: activity feed
+// Mock activity feed.
 const recentActivity = [
     { company: seedClients[0]?.company ?? 'Client', action: 'requested a redesign proposal', time: '2 hours ago' },
     { company: seedClients[1]?.company ?? 'Client', action: 'received an invoice', time: '5 hours ago' },
@@ -10,7 +11,7 @@ const recentActivity = [
 ]
 
 /**
- * Main dashboard page with quick stats & recent activity.
+ * Main dashboard page.
  */
 function Dashboard() {
     const pageRef = usePageReveal()
@@ -18,7 +19,7 @@ function Dashboard() {
     return (
         <div ref={pageRef} className="space-y-6">
             <section data-page-section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {/* mock example: analytics or summary endpoints */}
+                {/* Mock stat cards. */}
                 <StatCard title="Total Clients" value="128" change="+12% this month" />
                 <StatCard title="Active Projects" value="34" change="+5 new this week" />
                 <StatCard title="Monthly Revenue" value="EUR 24,300" change="+8.4% growth" />
@@ -29,11 +30,10 @@ function Dashboard() {
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
                     <h3 className="text-lg font-semibold">Performance Overview</h3>
                     <p className="mt-2 text-sm text-zinc-400">
-                        Place chart here.
+                        Monthly revenue movement across active client work.
                     </p>
 
-                    {/* mock example: time-series or reporting data */}
-                    <div className="mt-8 h-72 rounded-2xl border border-dashed border-white/10 bg-zinc-900/50" />
+                    <RevenueTrendChart />
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-6">

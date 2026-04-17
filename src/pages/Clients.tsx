@@ -45,7 +45,7 @@ const ClientTableSkeleton = () => (
 )
 
 /**
- * Async client management page backed by a mock service layer.
+ * Client list and drawer page.
  */
 function Clients() {
     const pageRef = usePageReveal()
@@ -89,6 +89,7 @@ function Clients() {
     useEffect(() => {
         let isMounted = true
 
+        // Load table data once.
         const loadClients = async () => {
             setIsLoading(true)
             setErrorMessage(null)
@@ -131,6 +132,7 @@ function Clients() {
 
         let isMounted = true
 
+        // Load drawer data on selection.
         const loadDetails = async () => {
             setIsDetailLoading(true)
             setDetailError(null)
@@ -243,6 +245,7 @@ function Clients() {
     }
 
     const handleSelectClient = (clientId: number) => {
+        // Clear old drawer data first.
         setSelectedClientDetails(null)
         setDetailError(null)
         setIsDetailLoading(true)
@@ -275,6 +278,7 @@ function Clients() {
 
         const updatedClient = await updateClientStatus(selectedClientId, status)
 
+        // Patch the changed row only.
         setClients((currentClients) =>
             currentClients.map((client) => (client.id === updatedClient.id ? toClientSummary(updatedClient) : client)),
         )
@@ -297,6 +301,7 @@ function Clients() {
 
         const updatedClient = await updateClientFields(selectedClientId, profile)
 
+        // Profile is used in table and drawer.
         setClients((currentClients) =>
             currentClients.map((client) => (client.id === updatedClient.id ? toClientSummary(updatedClient) : client)),
         )
@@ -309,6 +314,7 @@ function Clients() {
         }
 
         const updatedClient = await updateClientNotes(selectedClientId, notes)
+        // Notes only live in the drawer.
         setSelectedClientDetails(toClientDetails(updatedClient))
     }
 

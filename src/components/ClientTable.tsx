@@ -17,7 +17,7 @@ const statusStyles: Record<ClientSummary['status'], string> = {
 }
 
 /**
- * Client list table with row selection.
+ * Client summary table.
  */
 function ClientTable({ clients, selectedClientId, highlightedClientId, onSelectClient }: ClientTableProps) {
     const tableRef = useRef<HTMLDivElement | null>(null)
@@ -28,6 +28,7 @@ function ClientTable({ clients, selectedClientId, highlightedClientId, onSelectC
         }
 
         const context = gsap.context(() => {
+            // First table reveal.
             gsap.fromTo(
                 '[data-client-row]',
                 { y: motionTokens.table.distance, autoAlpha: 0 },
@@ -57,6 +58,7 @@ function ClientTable({ clients, selectedClientId, highlightedClientId, onSelectC
             return
         }
 
+        // Highlight saved row.
         const timeline = gsap.timeline()
         timeline.fromTo(
             row,

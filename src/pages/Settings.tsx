@@ -2,7 +2,7 @@ import LegacyJQueryWidget from '../components/LegacyJQueryWidget'
 import usePageReveal from '../hooks/usePageReveal'
 
 /**
- * Placeholder page for app settings and legacy tools.
+ * Settings page with the jQuery demo.
  */
 function Settings() {
     const pageRef = usePageReveal()

@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { motionTokens, prefersReducedMotion } from '../lib/motion'
 
 /**
- * Small shared page entrance motion.
+ * Shared GSAP page reveal.
  */
 function usePageReveal() {
     const pageRef = useRef<HTMLDivElement | null>(null)

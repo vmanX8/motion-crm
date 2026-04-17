@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 
 /**
- * Dashboard stat card props.
+ * Stat card data.
  */
 type StatCardProps = {
     title: string
@@ -11,7 +11,7 @@ type StatCardProps = {
 }
 
 /**
- * Dashboard summary row.
+ * Dashboard stat card.
  */
 function StatCard({ title, value, change }: StatCardProps) {
     const cardRef = useRef<HTMLDivElement | null>(null)
@@ -24,7 +24,7 @@ function StatCard({ title, value, change }: StatCardProps) {
         }
 
         const context = gsap.context(() => {
-            // Cards rise effect.
+            // Card reveal.
             gsap.fromTo(
                 card,
                 { y: 28, autoAlpha: 0, scale: 0.97 },
@@ -40,7 +40,7 @@ function StatCard({ title, value, change }: StatCardProps) {
         }, card)
 
         const onEnter = () => {
-            // Keep hover motion small.
+            // Small hover lift.
             gsap.to(card, {
                 y: -8,
                 scale: 1.015,

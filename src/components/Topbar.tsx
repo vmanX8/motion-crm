@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { Bell, Search } from 'lucide-react'
 
 /**
- * Top header with quick actions and search.
+ * Top header.
  */
 function Topbar() {
     const headerRef = useRef<HTMLElement | null>(null)
@@ -14,7 +14,7 @@ function Topbar() {
         }
 
         const context = gsap.context(() => {
-            // Full bar in from the top.
+            // Move the bar in.
             gsap.fromTo(
                 headerRef.current,
                 { y: -24, autoAlpha: 0 },
@@ -26,7 +26,7 @@ function Topbar() {
                 },
             )
 
-            // Stagger the text and controls for smooth fx.
+            // Stagger the controls.
             gsap.fromTo(
                 '.topbar-copy, .topbar-control',
                 { y: 14, autoAlpha: 0 },

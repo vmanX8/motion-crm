@@ -1,3 +1,6 @@
+/**
+ * Shared GSAP motion values.
+ */
 export const motionTokens = {
     page: {
         distance: 16,

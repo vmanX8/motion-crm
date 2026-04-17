@@ -8,6 +8,8 @@ const initialTags = [
     'legacy import',
 ]
 
+const STORAGE_KEY = 'motion-crm-legacy-tags'
+
 const escapeHtml = (value: string) =>
     value
         .replace(/&/g, '&amp;')
@@ -16,15 +18,39 @@ const escapeHtml = (value: string) =>
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
 
+const readTags = () => {
+    const rawValue = window.localStorage.getItem(STORAGE_KEY)
+
+    if (!rawValue) {
+        return [...initialTags]
+    }
+
+    try {
+        const parsedValue = JSON.parse(rawValue) as unknown
+
+        if (!Array.isArray(parsedValue)) {
+            return [...initialTags]
+        }
+
+        return parsedValue.filter((tag): tag is string => typeof tag === 'string')
+    } catch {
+        return [...initialTags]
+    }
+}
+
+const writeTags = (tags: string[]) => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tags))
+}
+
 /**
- * Isolated jQuery Tag Manager kept away from React-managed DOM.
+ * Isolated jQuery tag widget.
  */
 function LegacyJQueryWidget() {
     const widgetRef = useRef<HTMLDivElement | null>(null)
 
     useEffect(() => {
         const root = $(widgetRef.current)
-        let tags = [...initialTags]
+        let tags = readTags()
 
         const renderTag = (tag: string, index: number) => `
             <div data-tag-index="${index}" class="group flex items-center gap-2 rounded-full border border-white/10 bg-zinc-950/70 px-3 py-2">
@@ -92,6 +118,8 @@ function LegacyJQueryWidget() {
         }
 
         const renderTags = () => {
+            // Keep tags after refresh.
+            writeTags(tags)
             root.find('[data-tag-list]').html(tags.map((tag, index) => renderTag(tag, index)).join(''))
             updateStatus()
         }

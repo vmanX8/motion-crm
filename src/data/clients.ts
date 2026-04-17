@@ -1,10 +1,10 @@
 /**
- * Small shared types for the client demo flow.
+ * Client status options.
  */
 export type ClientStatus = 'Active' | 'Lead' | 'Inactive'
 
 /**
- * Lightweight client shape used by the table/list.
+ * Small table client.
  */
 export type ClientSummary = {
     id: number
@@ -18,7 +18,7 @@ export type ClientSummary = {
 }
 
 /**
- * Drawer/detail fields loaded separately from the list shape.
+ * Extra drawer client fields.
  */
 export type ClientDetails = {
     status: ClientStatus
@@ -37,7 +37,9 @@ export type Client = ClientSummary & ClientDetails
 
 export const clientStatuses: ClientStatus[] = ['Active', 'Lead', 'Inactive']
 
-// mock example: in production this data should come from an API or database
+/**
+ * Make a table summary from a full client.
+ */
 export const toClientSummary = (client: Client): ClientSummary => ({
     id: client.id,
     company: client.company,
@@ -49,6 +51,9 @@ export const toClientSummary = (client: Client): ClientSummary => ({
     projectCount: client.projectCount,
 })
 
+/**
+ * Make drawer details from a full client.
+ */
 export const toClientDetails = (client: Client): ClientDetails => ({
     status: client.status,
     phone: client.phone,
@@ -58,6 +63,9 @@ export const toClientDetails = (client: Client): ClientDetails => ({
     metadata: client.metadata,
 })
 
+/**
+ * Full mock client data.
+ */
 export const seedClients: Client[] = [
     {
         id: 1,

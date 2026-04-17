@@ -14,10 +14,16 @@ const DETAIL_DELAY_MS = 300
 
 type ClientStore = Client[]
 
+/**
+ * Fake client API.
+ */
 const cloneStore = (store: ClientStore): ClientStore => JSON.parse(JSON.stringify(store)) as ClientStore
 
 const createSeedStore = (): ClientStore => seedClients.map((client) => ({ ...client }))
 
+/**
+ * Read saved mock clients.
+ */
 const readStore = (): ClientStore => {
     if (typeof window === 'undefined') {
         return createSeedStore()
@@ -36,6 +42,9 @@ const readStore = (): ClientStore => {
     }
 }
 
+/**
+ * Save mock clients.
+ */
 const writeStore = (store: ClientStore) => {
     if (typeof window === 'undefined') {
         return
@@ -44,6 +53,9 @@ const writeStore = (store: ClientStore) => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
 }
 
+/**
+ * Fake network delay.
+ */
 const wait = (delayMs: number) =>
     new Promise<void>((resolve) => {
         window.setTimeout(resolve, delayMs)
@@ -54,6 +66,9 @@ export const getClientSummaries = async (): Promise<ClientSummary[]> => {
     return readStore().map(toClientSummary)
 }
 
+/**
+ * Load one client's details.
+ */
 export const getClientDetailsById = async (clientId: number): Promise<ClientDetails> => {
     await wait(DETAIL_DELAY_MS)
 
@@ -65,6 +80,9 @@ export const getClientDetailsById = async (clientId: number): Promise<ClientDeta
     return toClientDetails(client)
 }
 
+/**
+ * Update one client.
+ */
 export const updateClientFields = async (clientId: number, updates: Partial<Client>): Promise<Client> => {
     await wait(DETAIL_DELAY_MS)
 
@@ -91,6 +109,9 @@ export const updateClientStatus = async (clientId: number, status: ClientStatus)
 export const updateClientNotes = async (clientId: number, notes: string): Promise<Client> =>
     updateClientFields(clientId, { notes })
 
+/**
+ * Create a starter client.
+ */
 export const createClient = async (): Promise<Client> => {
     await wait(DETAIL_DELAY_MS)
 

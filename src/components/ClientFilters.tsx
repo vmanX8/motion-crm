@@ -11,7 +11,7 @@ type ClientFiltersProps = {
 }
 
 /**
- * Search and status tools for the client list.
+ * Local client filters.
  */
 function ClientFilters({
     searchValue,

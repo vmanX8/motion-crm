@@ -7,7 +7,7 @@ import Projects from './pages/Projects'
 import Settings from './pages/Settings'
 
 /**
- * Main app shell
+ * App shell with shared layout.
  */
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
           <Topbar />
 
           <main className="flex-1 p-6 md:p-8">
-            {/* mock example: no define routes*/}
+            {/* Page routes. */}
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/clients" element={<Clients />} />

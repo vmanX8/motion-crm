@@ -32,6 +32,9 @@ const phonePattern = /^[+()\-.\s\d]+$/
 const getPhoneDigits = (value: string) => value.replace(/\D/g, '')
 const sanitizePhoneInput = (value: string) => value.replace(/[^+()\-.\s\d]/g, '')
 
+/**
+ * Contact form with local draft state.
+ */
 function ProfileEditor({ initialProfile, onSave }: ProfileEditorProps) {
     const [profile, setProfile] = useState(initialProfile)
     const [saveState, setSaveState] = useState<SaveState>('idle')
@@ -224,6 +227,9 @@ type StatusEditorProps = {
     onSave: (status: ClientStatus) => Promise<void>
 }
 
+/**
+ * Status editor.
+ */
 function StatusEditor({ initialStatus, onSave }: StatusEditorProps) {
     const [value, setValue] = useState(initialStatus)
     const [saveState, setSaveState] = useState<SaveState>('idle')
@@ -354,6 +360,9 @@ type NotesEditorProps = {
     onSave: (notes: string) => Promise<void>
 }
 
+/**
+ * Notes editor with local draft state.
+ */
 function NotesEditor({ initialNotes, onSave }: NotesEditorProps) {
     const [value, setValue] = useState(initialNotes)
     const [saveState, setSaveState] = useState<SaveState>('idle')
@@ -490,7 +499,7 @@ function NotesEditor({ initialNotes, onSave }: NotesEditorProps) {
 }
 
 /**
- * Side drawer for viewing and editing one client.
+ * Client details drawer.
  */
 function ClientDrawer({
     selectedClientId,
@@ -606,6 +615,7 @@ function ClientDrawer({
         }
 
         const context = gsap.context(() => {
+            // Animate drawer content only.
             if (stateRef.current) {
                 gsap.fromTo(
                     stateRef.current,
